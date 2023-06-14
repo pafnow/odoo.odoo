@@ -216,6 +216,7 @@ class StockRule(models.Model):
         return new_move_vals
 
     @api.model
+    #D/ Might be called by ProcurementGroup.run
     def _run_pull(self, procurements):
         moves_values_by_company = defaultdict(list)
         mtso_products_by_locations = defaultdict(list)
@@ -244,16 +245,21 @@ class StockRule(models.Model):
             procure_method = rule.procure_method
             if rule.procure_method == 'mts_else_mto':
                 qty_needed = procurement.product_uom._compute_quantity(procurement.product_qty, procurement.product_id.uom_id)
+                #D/ If qty_needed <= 0, look for any stock.move linked to the procurement group and use its procure_method
                 if float_compare(qty_needed, 0, precision_rounding=procurement.product_id.uom_id.rounding) <= 0:
                     procure_method = 'make_to_order'
                     for move in procurement.values.get('group_id', self.env['procurement.group']).stock_move_ids:
                         if move.rule_id == rule and float_compare(move.product_uom_qty, 0, precision_rounding=move.product_uom.rounding) > 0:
                             procure_method = move.procure_method
                             break
+                    #D/ Since qty_needed <= 0, this might result in increasing available quantity in location_src
+                    #D/ When this might happen in reality?
                     forecasted_qties_by_loc[rule.location_src_id][procurement.product_id.id] -= qty_needed
+                #D/ qty_needed > available qty in location_src
                 elif float_compare(qty_needed, forecasted_qties_by_loc[rule.location_src_id][procurement.product_id.id],
                                    precision_rounding=procurement.product_id.uom_id.rounding) > 0:
                     procure_method = 'make_to_order'
+                #D/ 0 < qty_needed < available qty in location_src
                 else:
                     forecasted_qties_by_loc[rule.location_src_id][procurement.product_id.id] -= qty_needed
                     procure_method = 'make_to_stock'
@@ -461,6 +467,7 @@ class ProcurementGroup(models.Model):
         for action, procurements in actions_to_run.items():
             if hasattr(self.env['stock.rule'], '_run_%s' % action):
                 try:
+                    #D/ Might call StockRule._run_pull
                     getattr(self.env['stock.rule'], '_run_%s' % action)(procurements)
                 except ProcurementException as e:
                     procurement_errors += e.procurement_exceptions
