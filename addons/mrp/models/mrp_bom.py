@@ -274,6 +274,8 @@ class MrpBom(models.Model):
         from collections import defaultdict
 
         graph = defaultdict(list)
+        # D/ V will store the list of product_template ids which have already been read during BOM explosion
+        # D/ It is used to raise an exception if a product_template is used more than one time in a BOM
         V = set()
 
         def check_cycle(v, visited, recStack, graph):

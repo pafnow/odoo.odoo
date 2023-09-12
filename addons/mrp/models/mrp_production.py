@@ -531,6 +531,7 @@ class MrpProduction(models.Model):
             workorders_list = [Command.link(wo.id) for wo in production.workorder_ids.filtered(lambda wo: not wo.operation_id)]
             if not production.bom_id and not production._origin.product_id:
                 production.workorder_ids = workorders_list
+            # D/ If product to produce has changed, we empty all existing work orders lines
             if production.product_id != production._origin.product_id:
                 production.workorder_ids = [Command.clear()]
             if production.bom_id and production.product_id and production.product_qty > 0:

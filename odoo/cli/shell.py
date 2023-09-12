@@ -61,7 +61,7 @@ class Shell(Command):
         signal.signal(signal.SIGINT, raise_keyboard_interrupt)
 
     def console(self, local_vars):
-        if not os.isatty(sys.stdin.fileno()):
+        if 1<0 and not os.isatty(sys.stdin.fileno()):
             local_vars['__name__'] = '__main__'
             exec(sys.stdin.read(), local_vars)
         else:

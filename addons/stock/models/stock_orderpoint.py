@@ -288,6 +288,8 @@ class StockWarehouseOrderpoint(models.Model):
         """ Write the `route_id` field on `self`. This method is intendend to be called on the
         orderpoints generated when openning the replenish report.
         """
+        # D/ route_id might be set on self by other inheritance modules such as
+        # D/ addons.mrp.models.stock_orderpoint.StockWarehouseOrderpoint._set_default_route_id
         self = self.filtered(lambda o: not o.route_id)
         rules_groups = self.env['stock.rule']._read_group([
             ('route_id.product_selectable', '!=', False),
